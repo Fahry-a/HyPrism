@@ -254,30 +254,23 @@ jobs:
       - name: Build Flatpak (Linux)
         if: matrix.platform == 'linux'
         run: |
-          set -x  # Debug output
-          
           # Install Flatpak and flatpak-builder
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder
           
-          # Add Flathub remote for both system and user
-          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          # Add Flathub remote
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
           
-          # Install required runtime
-          flatpak --user install -y flathub org.gnome.Platform//46 org.gnome.Sdk//46
-          
-          # Verify files exist
-          ls -la /tmp/HyPrism-binary
-          ls -la build/appicon.png
+          # Install required runtime with timeout
+          timeout 300 flatpak install --user -y flathub org.gnome.Platform//46 org.gnome.Sdk//46 || {
+            echo "Runtime installation timed out or failed, trying alternative..."
+            flatpak install --user -y --noninteractive flathub org.gnome.Platform//46 org.gnome.Sdk//46
+          }
           
           # Prepare all files in the flatpak directory
           cp /tmp/HyPrism-binary flatpak/HyPrism
           chmod +x flatpak/HyPrism
           cp build/appicon.png flatpak/dev.hyprism.HyPrism.png
-          
-          # Show what's in flatpak dir
-          ls -la flatpak/
           
           # Build the Flatpak from the flatpak directory
           cd flatpak
@@ -285,7 +278,6 @@ jobs:
             --user \
             --force-clean \
             --repo=repo \
-            --state-dir=.flatpak-builder \
             builddir \
             dev.hyprism.HyPrism.json
           
@@ -293,7 +285,7 @@ jobs:
           flatpak build-bundle repo HyPrism.flatpak dev.hyprism.HyPrism
           mv HyPrism.flatpak ../build/bin/
           
-          # Clean up generated files (keep original flatpak files)
+          # Clean up generated files
           rm -f HyPrism dev.hyprism.HyPrism.png
           rm -rf repo builddir .flatpak-builder
 
