@@ -153,8 +153,8 @@ func attemptDownload(
 	return nil
 }
 
-func createOptimizedClient() *http.Client {
-	transport := &http.Transport{
+var (
+	defaultTransport = &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
@@ -164,16 +164,28 @@ func createOptimizedClient() *http.Client {
 			MinVersion: tls.VersionTLS12,
 		},
 		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ResponseHeaderTimeout: 30 * time.Second,
 		DisableCompression:    true,
 	}
 
-	return &http.Client{
-		Transport: transport,
+	// sharedClient is a singleton HTTP client used to enable TCP connection reuse (Keep-Alive)
+	// across different parts of the application, reducing handshake overhead.
+	sharedClient = &http.Client{
+		Transport: defaultTransport,
 		Timeout:   downloadTimeout,
 	}
+)
+
+// GetSharedClient returns a globally shared optimized HTTP client
+func GetSharedClient() *http.Client {
+	return sharedClient
+}
+
+func createOptimizedClient() *http.Client {
+	return sharedClient
 }
 
 func formatSpeed(bytesPerSec float64) string {
