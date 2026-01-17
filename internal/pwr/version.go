@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"HyPrism/internal/env"
+	"HyPrism/internal/util/download"
 )
 
 // getOS returns the operating system name in the format expected by Hytale's patch server
@@ -70,9 +71,7 @@ func performVersionCheck(versionType string) VersionCheckResult {
 		return result
 	}
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
+	client := download.GetSharedClient()
 
 	// Binary search for the latest version
 	low, high := 1, 1000
@@ -85,8 +84,12 @@ func performVersionCheck(versionType string) VersionCheckResult {
 		
 		result.CheckedURLs = append(result.CheckedURLs, url)
 
+		// HEAD request to check if version exists without downloading
 		resp, err := client.Head(url)
-		time.Sleep(200 * time.Millisecond)
+		if err == nil {
+			// Crucial: Close body to allow connection reuse in the shared transport
+			resp.Body.Close()
+		}
 
 		if err == nil && resp.StatusCode == http.StatusOK {
 			result.LatestVersion = mid
