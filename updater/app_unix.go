@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // Apply applies a launcher update on Unix systems and restarts the app
@@ -22,29 +23,93 @@ func Apply(tmp string) error {
 	
 	var script string
 	if runtime.GOOS == "darwin" {
-		// For macOS .app bundles - find the actual app bundle path
-		appBundlePath := exe
+		// For macOS - the update is a DMG file containing the .app bundle
 		// Navigate up from Contents/MacOS/executable to the .app bundle
+		appBundlePath := exe
 		for i := 0; i < 3; i++ {
 			appBundlePath = filepath.Dir(appBundlePath)
 		}
-		if filepath.Ext(appBundlePath) != ".app" {
-			// Not in a bundle, use regular executable path
-			appBundlePath = exe
+		if !strings.HasSuffix(appBundlePath, ".app") {
+			return fmt.Errorf("not running from an app bundle: %s", appBundlePath)
 		}
 		
+		appName := filepath.Base(appBundlePath) // e.g., "HyPrism.app"
+		appDir := filepath.Dir(appBundlePath)   // e.g., "/Applications"
+		mountPoint := filepath.Join(os.TempDir(), "hyprism-dmg-mount")
+		
 		script = fmt.Sprintf(`#!/bin/bash
-sleep 1
-rm -rf "%s.old" 2>/dev/null
-mv "%s" "%s.old" 2>/dev/null
-cp "%s" "%s"
-chmod +x "%s"
-rm -rf "%s.old"
-rm -f "%s"
+set -e
+
+echo "Starting HyPrism update..."
+
+# Wait for app to close
+sleep 2
+
+# Create mount point
+mkdir -p "%s"
+
+# Mount the DMG
+echo "Mounting update package..."
+hdiutil attach "%s" -mountpoint "%s" -nobrowse -quiet
+
+# Find the .app in the mounted DMG
+APP_IN_DMG=""
+for item in "%s"/*.app; do
+    if [ -d "$item" ]; then
+        APP_IN_DMG="$item"
+        break
+    fi
+done
+
+if [ -z "$APP_IN_DMG" ]; then
+    echo "Error: No .app found in update package"
+    hdiutil detach "%s" -quiet 2>/dev/null || true
+    exit 1
+fi
+
+echo "Found app: $APP_IN_DMG"
+
+# Backup old app
+echo "Backing up current version..."
+rm -rf "%s.old" 2>/dev/null || true
+mv "%s" "%s.old" 2>/dev/null || true
+
+# Copy new app
+echo "Installing new version..."
+cp -R "$APP_IN_DMG" "%s/"
+
+# Remove quarantine attribute (important for macOS security)
+echo "Removing quarantine..."
+xattr -cr "%s/%s" 2>/dev/null || true
+
+# Set executable permissions
+chmod +x "%s/%s/Contents/MacOS/"* 2>/dev/null || true
+
+# Unmount DMG
+echo "Cleaning up..."
+hdiutil detach "%s" -quiet 2>/dev/null || true
+rmdir "%s" 2>/dev/null || true
+
+# Remove backup and temp files
+rm -rf "%s.old" 2>/dev/null || true
+rm -f "%s" 2>/dev/null || true
+
+echo "Update complete! Launching HyPrism..."
+
 # Restart the application
-open "%s"
+open "%s/%s"
+
+# Clean up this script
 rm -f "%s"
-`, exe, exe, exe, tmp, exe, exe, exe, tmp, appBundlePath, scriptPath)
+`, mountPoint, tmp, mountPoint, mountPoint, mountPoint,
+   appBundlePath, appBundlePath, appBundlePath,
+   appDir,
+   appDir, appName,
+   appDir, appName,
+   mountPoint, mountPoint,
+   appBundlePath, tmp,
+   appDir, appName,
+   scriptPath)
 	} else {
 		// Linux
 		script = fmt.Sprintf(`#!/bin/bash
