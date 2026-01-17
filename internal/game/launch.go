@@ -365,11 +365,8 @@ func IsGameRunning() bool {
 		out, err := exec.Command("pgrep", "-f", "Hytale").Output()
 		isRunning = err == nil && len(out) > 0
 	} else if runtime.GOOS == "windows" {
-		// Check for HytaleClient.exe on Windows - hide the console window
-		cmd := exec.Command("tasklist", "/FI", "IMAGENAME eq HytaleClient.exe", "/FO", "CSV", "/NH")
-		cmd.SysProcAttr = getWindowsSysProcAttr()
-		out, err := cmd.Output()
-		isRunning = err == nil && strings.Contains(string(out), "HytaleClient.exe")
+		// Check for HytaleClient.exe on Windows using WMI (no window flash)
+		isRunning = isWindowsProcessRunning("HytaleClient.exe")
 	} else {
 		// Linux
 		out, err := exec.Command("pgrep", "-f", "HytaleClient").Output()
