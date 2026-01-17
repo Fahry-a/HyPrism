@@ -406,11 +406,19 @@ func (a *App) GetGamePath() string {
 
 // IsGameInstalled checks if the game is installed
 func (a *App) IsGameInstalled() bool {
-	gameClient := "HytaleClient"
-	if runtime.GOOS == "windows" {
-		gameClient += ".exe"
+	gameLatestDir := a.GetGamePath()
+	
+	// Determine client path based on OS (matching install.go structure)
+	var clientPath string
+	switch runtime.GOOS {
+	case "darwin":
+		clientPath = filepath.Join(gameLatestDir, "Client", "Hytale.app", "Contents", "MacOS", "HytaleClient")
+	case "windows":
+		clientPath = filepath.Join(gameLatestDir, "Client", "HytaleClient.exe")
+	default:
+		clientPath = filepath.Join(gameLatestDir, "Client", "HytaleClient")
 	}
-	clientPath := filepath.Join(a.GetGamePath(), "Client", gameClient)
+	
 	_, err := os.Stat(clientPath)
 	return err == nil
 }
