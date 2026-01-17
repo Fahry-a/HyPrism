@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"HyPrism/internal/env"
+	"HyPrism/internal/util/download"
 )
 
 // getOS returns the operating system name in the format expected by Hytale's patch server
@@ -90,9 +91,7 @@ func performVersionCheck(versionType string) VersionCheckResult {
 		startVersion = 5 // Start checking from v5 down
 	}
 
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
+	client := download.GetSharedClient()
 
 	// Check versions in parallel from startVersion down to 1
 	type versionCheck struct {
