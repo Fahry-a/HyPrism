@@ -27,15 +27,12 @@ sha256sums=('SKIP')
 
 prepare() {
   cd "HyPrism-${pkgver}"
-  
-  # Create go directory if it doesn't exist
   mkdir -p "${srcdir}/go"
 }
 
 build() {
   cd "HyPrism-${pkgver}"
 
-  # Set up Go environment
   export GOPATH="${srcdir}/go"
   export GOBIN="${GOPATH}/bin"
   export PATH="${GOBIN}:${PATH}"
@@ -45,43 +42,32 @@ build() {
   export CGO_CXXFLAGS="${CXXFLAGS}"
   export CGO_LDFLAGS="${LDFLAGS}"
 
-  # Build frontend
   cd frontend
   npm ci
   npm run build
   cd ..
 
-  # Install wails to local GOPATH
   go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-  # Determine architecture for wails build
   local _wails_arch=""
   case "$CARCH" in
     x86_64) _wails_arch="linux/amd64" ;;
     aarch64) _wails_arch="linux/arm64" ;;
   esac
 
-  # Build with wails
   wails build \
     -platform "${_wails_arch}" \
     -ldflags "-X 'app.Version=${pkgver}' -s -w" \
-    -clean \
-    -o "${pkgname}"
+    -clean
 }
 
 package() {
   cd "HyPrism-${pkgver}"
 
-  # Install binary
-  install -Dm755 "${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
-
-  # Install license
+  install -Dm755 "build/bin/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
   install -Dm644 LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}/"
-
-  # Install documentation
   install -Dm644 README.md -t "${pkgdir}/usr/share/doc/${pkgname}/"
 
-  # Install icon
   local _icon=""
   if [ -f "build/appicon.png" ]; then
     _icon="build/appicon.png"
@@ -90,7 +76,6 @@ package() {
   fi
   [ -n "${_icon}" ] && install -Dm644 "${_icon}" "${pkgdir}/usr/share/pixmaps/${pkgname}.png"
 
-  # Create and install desktop file
   cat > "${srcdir}/${pkgname}.desktop" << EOF
 [Desktop Entry]
 Name=HyPrism

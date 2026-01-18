@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=HyPrism
-Comment=Hytale launcher with mod management
-Exec=hyprism
-Icon=hyprism
-Categories=Game;Utility;
-Terminal=false
-StartupNotify=true
