@@ -64,7 +64,7 @@ build() {
 package() {
   cd "HyPrism-${pkgver}"
 
-  install -Dm755 "build/bin/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+  install -Dm755 "build/bin/HyPrism" "${pkgdir}/usr/bin/${pkgname}"
   install -Dm644 LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}/"
   install -Dm644 README.md -t "${pkgdir}/usr/share/doc/${pkgname}/"
 
