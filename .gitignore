@@ -45,3 +45,11 @@ flatpak-repo/
 flatpak-build/
 .flatpak-builder/
 *.flatpak
+# AUR build artifacts
+*.tar.gz
+*.tar.xz
+src/
+pkg/
+hyprism-*/
+*.tar*
+.makepkg.conf.bak

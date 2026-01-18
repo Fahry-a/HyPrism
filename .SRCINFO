@@ -1,0 +1,24 @@
+pkgbase = hyprism
+	pkgdesc = Hytale launcher with mod management and more
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/yyyumeniku/HyPrism
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	makedepends = git
+	makedepends = go
+	makedepends = nodejs
+	makedepends = npm
+	makedepends = base-devel
+	depends = gtk3
+	depends = webkit2gtk-4.1
+	depends = gcc-libs
+	optdepends = jre21-openjdk: For running Hytale
+	provides = hyprism
+	conflicts = hyprism-bin
+	conflicts = hyprism-git
+	source = hyprism-1.0.0.tar.gz:: https://github.com/yyyumeniku/HyPrism/archive/v1.0.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = hyprism
