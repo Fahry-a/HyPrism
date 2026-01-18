@@ -86,26 +86,16 @@ func LaunchInstance(playerName string, branch string, version int) error {
 			"--name", playerName,
 		)
 	} else if runtime.GOOS == "windows" {
-		// Windows needs to launch from the Client directory
-		clientDir := filepath.Join(gameDir, "Client")
-		
-		// Add Java networking properties to allow localhost connections
-		// This fixes "Failed to connect to server" errors in singleplayer on Windows
+		// Windows - launch directly without special working directory
 		cmd = exec.Command(clientPath,
 			"--app-dir", gameDir,
 			"--user-dir", userDataDir,
 			"--java-exec", jrePath,
-			"--java-args", "-Djava.net.preferIPv4Stack=true",
-			"--java-args", "-Dnetworkaddress.cache.ttl=0",
 			"--auth-mode", "offline",
 			"--uuid", "00000000-1337-1337-1337-000000000000",
 			"--name", playerName,
 		)
 		cmd.SysProcAttr = getWindowsSysProcAttr()
-		cmd.Dir = clientDir  // Set working directory to Client folder on Windows
-		
-		fmt.Printf("Windows launch command: %s %v\n", clientPath, cmd.Args[1:])
-		fmt.Printf("Working directory: %s\n", clientDir)
 	} else {
 		clientDir := filepath.Join(gameDir, "Client")
 		cmd = exec.Command(clientPath,
@@ -119,33 +109,20 @@ func LaunchInstance(playerName string, branch string, version int) error {
 		cmd.Env = append(os.Environ(), fmt.Sprintf("LD_LIBRARY_PATH=%s:%s", clientDir, os.Getenv("LD_LIBRARY_PATH")))
 	}
 	
-	// Set working directory (already set for Windows above)
-	if cmd.Dir == "" {
-		cmd.Dir = baseDir
-	}
+	cmd.Dir = baseDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if runtime.GOOS != "windows" {
-		// Only override Env if not Windows (Windows cmd.Dir is already set)
-		cmd.Env = os.Environ()
-	}
+	cmd.Env = os.Environ()
 
-	fmt.Printf("Starting game process...\n")
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start game: %w", err)
 	}
 
-	fmt.Printf("Game process started with PID: %d\n", cmd.Process.Pid)
 	gameProcess = cmd.Process
 	gameRunning = true
 	
 	go func() {
-		err := cmd.Wait()
-		if err != nil {
-			fmt.Printf("Game process exited with error: %v\n", err)
-		} else {
-			fmt.Printf("Game process exited normally\n")
-		}
+		cmd.Wait()
 		gameProcess = nil
 		gameRunning = false
 	}()
