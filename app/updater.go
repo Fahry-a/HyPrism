@@ -11,6 +11,12 @@ import (
 
 // CheckUpdate checks for launcher updates
 func (a *App) CheckUpdate() (*updater.Asset, error) {
+	// Disable updater if installed from build/AUR/makepkg
+	if isInstalledFromBuild() {
+		fmt.Println("Updater disabled: Application installed from build/AUR/makepkg")
+		return nil, nil
+	}
+
 	fmt.Println("Checking for launcher updates...")
 
 	asset, newVersion, err := updater.CheckUpdate(a.ctx, AppVersion)
@@ -30,6 +36,12 @@ func (a *App) CheckUpdate() (*updater.Asset, error) {
 
 // Update downloads and applies a launcher update
 func (a *App) Update() error {
+	// Disable updater if installed from build/AUR/makepkg
+	if isInstalledFromBuild() {
+		fmt.Println("Updater disabled: Application installed from build/AUR/makepkg")
+		return WrapError(ErrorTypeValidation, "Updater is disabled for installations from build/AUR/makepkg. Please update using your package manager.", nil)
+	}
+
 	fmt.Println("Starting launcher update process...")
 
 	asset, newVersion, err := updater.CheckUpdate(a.ctx, AppVersion)
@@ -84,6 +96,12 @@ func (a *App) Update() error {
 
 // checkUpdateSilently checks for updates without user interaction
 func (a *App) checkUpdateSilently() {
+	// Disable updater if installed from build/AUR/makepkg
+	if isInstalledFromBuild() {
+		fmt.Println("Updater disabled: Application installed from build/AUR/makepkg")
+		return
+	}
+
 	fmt.Println("Running silent update check...")
 
 	asset, newVersion, err := updater.CheckUpdate(a.ctx, AppVersion)

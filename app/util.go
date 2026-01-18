@@ -122,3 +122,32 @@ func (a *App) GetPlatformInfo() map[string]string {
 		"arch": runtime.GOARCH,
 	}
 }
+
+// isInstalledFromBuild checks if the application is installed from build/AUR/makepkg
+// Returns true if installed from AUR, makepkg, or build script
+func isInstalledFromBuild() bool {
+	exe, err := os.Executable()
+	if err != nil {
+		return false
+	}
+
+	// Resolve symlinks to get the actual path
+	exePath, err := filepath.EvalSymlinks(exe)
+	if err != nil {
+		exePath = exe
+	}
+
+	// Check if installed in system directories (typical for AUR/makepkg)
+	systemPaths := []string{
+		"/usr/bin/",
+		"/usr/local/bin/",
+	}
+
+	for _, sysPath := range systemPaths {
+		if strings.HasPrefix(exePath, sysPath) {
+			return true
+		}
+	}
+
+	return false
+}

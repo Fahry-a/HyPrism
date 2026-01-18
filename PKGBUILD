@@ -3,7 +3,7 @@ pkgver=1.0.17
 pkgrel=1
 pkgdesc="Hytale launcher with mod management and more"
 arch=('x86_64' 'aarch64')
-url="https://github.com/Fahry-a/HyPrism"
+url="https://github.com/yyyumeniku/HyPrism"
 license=('MIT')
 depends=(
   'gtk3'
