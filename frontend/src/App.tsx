@@ -220,6 +220,9 @@ const App: React.FC = () => {
       if (data.progress >= 100 && data.stage === 'launch') {
         setIsGameRunning(true);
         setIsDownloading(false);
+      } else if (data.stage === 'complete' && data.progress >= 100) {
+        // Game was already installed, will launch now
+        setIsDownloading(false);
       }
     });
 
@@ -280,6 +283,13 @@ const App: React.FC = () => {
     setIsDownloading(true);
     try {
       await DownloadAndLaunch(username);
+      // If we get here without error and haven't set running state, something went wrong
+      // Reset after a short delay to allow events to process
+      setTimeout(() => {
+        if (!isGameRunning) {
+          setIsDownloading(false);
+        }
+      }, 2000);
     } catch (err) {
       console.error('Launch failed:', err);
       setIsDownloading(false);
